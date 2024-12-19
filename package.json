@@ -1,0 +1,29 @@
+{
+  "name": "cryptopunks-indexer",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "ponder dev",
+    "start": "ponder start",
+    "db": "ponder db",
+    "codegen": "ponder codegen",
+    "lint": "eslint .",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "ponder": "^0.8.7",
+    "hono": "^4.5.0",
+    "viem": "^2.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "eslint": "^8.53.0",
+    "eslint-config-ponder": "^0.8.7",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=18.14"
+  },
+  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
+}
