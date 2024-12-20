@@ -30,6 +30,7 @@ export const event = onchainTable('events', (t) => ({
     from: t.hex(),
     to: t.hex(),
     value: t.bigint(),
+    punk: t.bigint(),
   }),
   (table) => ({
     pk: primaryKey({
