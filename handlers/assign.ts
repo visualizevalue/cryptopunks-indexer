@@ -1,7 +1,7 @@
 import { punk } from 'ponder:schema'
 import { getAccount, getPunkAttributes } from '../utils/database'
 
-const onAssign = async ({ event, context }) => {
+const assign = async ({ event, context }) => {
   const owner = event.args.to
   const id = event.args.punkIndex
   const blockNumber = event.block.number
@@ -16,5 +16,5 @@ const onAssign = async ({ event, context }) => {
   await getPunkAttributes(id, context)
 }
 
-export default onAssign
+export default assign
 

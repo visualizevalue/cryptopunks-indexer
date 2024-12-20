@@ -14,10 +14,7 @@ export async function getAccount (address, { blockNumber, client, db }) {
   }
 
   // Check if ENS already existed
-  if (blockNumber < 19258213n) {
-    console.info(`Skip fetching ENS as it didn't exist yet.`)
-    return
-  }
+  if (blockNumber < 19258213n) return
 
   const now = nowInSeconds()
   if ((data.ens_updated_at || 0n) + ONE_DAY < now) {
