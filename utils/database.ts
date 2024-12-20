@@ -1,14 +1,17 @@
 import { zeroAddress } from 'viem'
 import { normalize } from 'viem/ens'
-import { account, profile, punk } from 'ponder:schema'
+import { type Context } from 'ponder:registry'
+import { accounts, profiles, punks } from 'ponder:schema'
 import { ONE_DAY, nowInSeconds } from './time'
 import { CryptoPunksDataAbi, CryptoPunksDataAddress } from '../abis/CryptoPunksDataAbi'
 
-export async function getAccount (address, { blockNumber, client, db }) {
-  let data = await db.find(account, { address })
+type TimedContext = Context & { blockNumber: bigint }
+
+export async function getAccount (address: `0x${string}`, { blockNumber, client, db }: TimedContext) {
+  let data = await db.find(accounts, { address })
 
   if (! data) {
-    data = await db.insert(account)
+    data = await db.insert(accounts)
       .values({ address, ens: '', ens_updated_at: 0n })
       .onConflictDoNothing()
   }
@@ -17,36 +20,36 @@ export async function getAccount (address, { blockNumber, client, db }) {
   if (blockNumber < 19258213n) return
 
   const now = nowInSeconds()
-  if ((data.ens_updated_at || 0n) + ONE_DAY < now) {
+  if ((data?.ens_updated_at || 0n) + ONE_DAY < now) {
     try {
-      const ens = (await client.getEnsName({ address, blockTag: 'latest' })) || ''
+      const ens = (await client.getEnsName({ address, blockTag: 'latest' } as any)) || ''
 
-      data = await db.update(account, { address }).set({ ens, ens_updated_at: now })
-    } catch (e) {
+      data = await db.update(accounts, { address }).set({ ens, ens_updated_at: now })
+    } catch (e: any) {
       console.warn(`Ran into an issue fetching/saving the ENS record for ${address}: "${e.message}"`)
     }
   } else {
-    console.info(`Skip ens update: ${address}, ${data.ens}`)
+    console.info(`Skip ens update: ${address}, ${data?.ens}`)
   }
 
   return data
 }
 
-export async function getPunkAttributes (id, { client, db }) {
-  const attributeString = await client.readContract({
+export async function getPunkAttributes (id: bigint, { client, db }: Context) {
+  const attributeString: string = await client.readContract({
     abi: CryptoPunksDataAbi,
     address: CryptoPunksDataAddress,
     functionName: 'punkAttributes',
-    args: [id],
-    blockNumber: 13047090,
+    args: [Number(id)],
+    blockNumber: 13047090n,
   })
 
   const attributes = attributeString.split(', ').map(s => s.trim())
 
-  await db.update(punk, { id }).set({ attributes })
+  await db.update(punks, { id }).set({ attributes })
 }
 
-export async function saveProfile (ens, { client, db }) {
+export async function saveProfile (ens: string, { client, db }: Context) {
   if (! ens) return
 
   try {
@@ -55,7 +58,7 @@ export async function saveProfile (ens, { client, db }) {
       twitter,
     ] = await Promise.all([
       client.getEnsAvatar({ name: normalize(ens) }),
-      client.getEnsText({ name: ens, key: 'com.twitter' }),
+      client.getEnsText({ name: ens, key: 'com.twitter' }) as unknown as string,
     ])
 
     const data = {
@@ -66,7 +69,7 @@ export async function saveProfile (ens, { client, db }) {
       updated_at: BigInt(Date.now()),
     }
 
-    await db.insert(profile).values({ ens, ...data }).onConflictDoUpdate(data)
+    await db.insert(profiles).values({ ens, ...data }).onConflictDoUpdate(data)
   } catch (e) {
     console.warn(`Error fetching profile:`, e)
   }

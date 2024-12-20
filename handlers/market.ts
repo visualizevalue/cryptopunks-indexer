@@ -1,5 +1,6 @@
 import { eq, and, desc } from 'ponder'
-import { punk, event } from 'ponder:schema'
+import { type IndexingFunctionArgs } from 'ponder:registry'
+import { punks, events } from 'ponder:schema'
 import { zeroAddress } from 'viem'
 import { getAccount } from '../utils/database'
 
@@ -10,39 +11,39 @@ import { getAccount } from '../utils/database'
 // event PunkNoLongerForSale(uint256 indexed punkIndex)
 
 // event PunkBidEntered(uint256 indexed punkIndex, uint256 value, address indexed fromAddress)
-export const bidEntered = async ({ event: e, context }) => {
-  const blockNumber = e.block.number
-  const bidder = e.args.fromAddress
-  const id = e.args.punkIndex
-  const value = e.args.value
+export const bidEntered = async ({ event, context }: IndexingFunctionArgs<'CryptoPunks:PunkBidEntered'>) => {
+  const blockNumber = event.block.number
+  const bidder = event.args.fromAddress
+  const id = event.args.punkIndex
+  const value = event.args.value
 
   // Update the account
   await getAccount(bidder, { ...context, blockNumber })
 
   // Store the event
   await context.db
-    .insert(event)
+    .insert(events)
     .values({
       type: 'BID',
       from: bidder,
       value,
       punk: id,
-      hash: e.transaction.hash,
-      block_number: e.block.number,
-      log_index: e.log.logIndex,
-      timestamp: e.block.timestamp,
+      hash: event.transaction.hash,
+      block_number: blockNumber,
+      log_index: event.log.logIndex,
+      timestamp: event.block.timestamp,
     })
     .onConflictDoNothing()
 }
 
 // event PunkBought(uint256 indexed punkIndex, uint256 value, address indexed fromAddress, address indexed toAddress)
-export const bought = async ({ event: e, context }) => {
-  const blockNumber = e.block.number
-  const from = e.args.fromAddress
-  const id = e.args.punkIndex
+export const bought = async ({ event, context }: IndexingFunctionArgs<'CryptoPunks:PunkBought'>) => {
+  const blockNumber = event.block.number
+  const from = event.args.fromAddress
+  const id = event.args.punkIndex
 
-  let to = e.args.toAddress
-  let value = e.args.value
+  let to: `0x${string}` = event.args.toAddress
+  let value: bigint = event.args.value
 
   // Handle bought event via accepted bid edge case (CP bug line 227)
   // If the value is 0, it must be from an accepted bid, as punks
@@ -51,14 +52,14 @@ export const bought = async ({ event: e, context }) => {
     try {
       const [previousBid] = await context.db.sql
         .select()
-        .from(event)
-        .where(and(eq(event.type, 'BID'), eq(event.punk, id)))
-        .orderBy(desc(event.block_number, event.log_index))
+        .from(events)
+        .where(and(eq(events.type, 'BID'), eq(events.punk, id)))
+        .orderBy(desc(events.block_number), desc(events.log_index))
         .limit(1)
 
-      value = previousBid.value
-      to = previousBid.from
-    } catch (e) {
+      value = previousBid?.value || 0n
+      to = previousBid?.from || zeroAddress
+    } catch (e: any) {
       console.warn(`Error fetching previous bid in bought event:`, e.message)
     }
   }
@@ -71,21 +72,21 @@ export const bought = async ({ event: e, context }) => {
 
   // Store the event
   await context.db
-    .insert(event)
+    .insert(events)
     .values({
       type: 'BUY',
       from,
       to,
       value,
       punk: id,
-      hash: e.transaction.hash,
-      block_number: e.block.number,
-      log_index: e.log.logIndex,
-      timestamp: e.block.timestamp,
+      hash: event.transaction.hash,
+      block_number: event.block.number,
+      log_index: event.log.logIndex,
+      timestamp: event.block.timestamp,
     })
     .onConflictDoNothing()
 
   // Update punk owner
-  await context.db.update(punk, { id }).set({ owner: to })
+  await context.db.update(punks, { id }).set({ owner: to })
 }
 

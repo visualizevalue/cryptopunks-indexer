@@ -1,12 +1,12 @@
 import { onchainTable, onchainEnum, primaryKey, relations } from 'ponder'
 
-export const account = onchainTable('accounts', (t) => ({
+export const accounts = onchainTable('accounts', (t) => ({
   address: t.hex().primaryKey(),
   ens: t.text(),
   ens_updated_at: t.bigint(),
 }))
 
-export const profile = onchainTable('profiles', (t) => ({
+export const profiles = onchainTable('profiles', (t) => ({
   ens: t.text().primaryKey(),
   avatar: t.text(),
   description: t.text(),
@@ -14,14 +14,14 @@ export const profile = onchainTable('profiles', (t) => ({
   updated_at: t.bigint(),
 }))
 
-export const punk = onchainTable('punks', (t) => ({
+export const punks = onchainTable('punks', (t) => ({
   id: t.bigint().primaryKey(),
   owner: t.hex(),
   attributes: t.text().array(),
 }))
 
 export const eventType = onchainEnum('type', ['ASSIGN', 'TRANSFER', 'OFFER', 'BID', 'BUY'])
-export const event = onchainTable('events', (t) => ({
+export const events = onchainTable('events', (t) => ({
     type: eventType('type'),
     hash: t.hex(),
     block_number: t.bigint(),
@@ -43,21 +43,21 @@ export const event = onchainTable('events', (t) => ({
 //                                 RELATIONS
 // ===========================================================================
 
-export const accountRelations = relations(account, ({ many, one }) => ({
-  punks: many(punk, {
-    fields: [punk.owner],
-    references: [account.address],
-  }),
-  profile: one(profile, {
-    fields: [account.ens],
-    references: [profile.ens],
-  }),
-}))
-
-export const punkRelations = relations(punk, ({ one }) => ({
-  owner: one(account, {
-    fields: [punk.owner],
-    references: [account.address],
-  }),
-}))
-
+// export const accountRelations = relations(accounts, ({ many, one }) => ({
+//   punks: many(punks, {
+//     fields: [punks.owner],
+//     references: [accounts.address],
+//   }),
+//   profile: one(profiles, {
+//     fields: [accounts.ens],
+//     references: [profiles.ens],
+//   }),
+// }))
+//
+// export const punkRelations = relations(punks, ({ many, one }) => ({
+//   owner: one(accounts, {
+//     fields: [punks.owner],
+//     references: [accounts.address],
+//   }),
+// }))
+//
